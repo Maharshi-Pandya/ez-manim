@@ -65,6 +65,9 @@ class BaseLLM(ABC):
             role = message['role']
             content = message['content']
 
+            if role == "system":
+                continue
+
             # Calculate the token length of the content
             content_length = num_tokens_from_messages([message])
 
@@ -76,6 +79,8 @@ class BaseLLM(ABC):
                 # Update the total length
                 total_length += content_length
 
+
+        selected_messages.append({'role': 'system', 'content': self.system_prompt})
         return reversed(selected_messages)
             
 

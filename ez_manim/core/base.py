@@ -81,14 +81,27 @@ class Core:
             self.console.print("\n\nbye bye!\n")
             sys.exit(0)
 
-    def ask_llm(self, user_input: str) -> str:
+    def ask_llm(self, user_input: str) -> Tuple[str, int]:
         """
         Get a response from the llm
         """
 
         response: str = ""
         # 0: code, 1: invalid
-        response_type: int = 0
+        ok: int = 0
+
+        messages = self.llm.get_windowed_history()
+        messages.append({'role': 'user', 'content': user_input})
+        
+        response = self.llm.generate(messages)
+
+        if response == "invalid":
+            ok = 1
+        elif response.startswith("Manim code:"):
+            ok = 0
+        
+        return (response, ok)
+
 
     def _str2md(self, content: str) -> Markdown:
         _md = Markdown(content)
