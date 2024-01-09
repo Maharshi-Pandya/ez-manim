@@ -1,6 +1,8 @@
 from typing import *
 from abc import ABC
 
+from ..utils import num_tokens_from_messages
+
 
 class BaseLLM(ABC):
     """
@@ -18,7 +20,9 @@ class BaseLLM(ABC):
 
         # every llm has access to a chat history
         # list of messages of format [{"role": "...", "content": "..."}]
-        self.chat_history: List[Dict[str, str]] = None
+        self.chat_history: List[Dict[str, str]] = [
+            {"role": "system", "content": self.system_prompt}
+        ]
 
         # text generation params
         self.generation_params: Dict[str, Any] = generation_params
@@ -36,10 +40,44 @@ class BaseLLM(ABC):
         """
         Resets the history
         """
-        self.chat_history = None
+        self.chat_history = [
+            {"role": "system", "content": self.system_prompt}
+        ]
+
+    def add_to_history(self, role: str, content: str):
+        """
+        Add the message to chat history
+        """
+        self.chat_history.append(dict(role=role, content=content))
 
     def update_generation_params(self, value: Dict[str, Any]):
         self.generation_params = value
+
+    def get_windowed_history(self, num_tokens: int = 1500) -> List[Dict[str, str]]:
+        """
+        returns a windowed chat history with a limit of `num_tokens` tokens
+        """
+        selected_messages: List[Dict[str, str]] = []
+        total_length = 0
+
+        # Iterate through messages in reverse order
+        for message in reversed(self.chat_history):
+            role = message['role']
+            content = message['content']
+
+            # Calculate the token length of the content
+            content_length = num_tokens_from_messages([message])
+
+            # Check if adding this message exceeds the maximum length
+            if total_length + content_length <= num_tokens:
+                # Add the message to the selected list
+                selected_messages.append({'role': role, 'content': content})
+
+                # Update the total length
+                total_length += content_length
+
+        return reversed(selected_messages)
+            
 
     def generate(self, messages: List[Dict[str, str]]) -> Any:
         """

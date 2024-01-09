@@ -1,7 +1,8 @@
 from typing import Any, Dict, List
-from .base import BaseLLM
-
 from openai import OpenAI
+
+from .base import BaseLLM
+from .prompts import DEFAULT_SYSTEM_PROMPT
 
 
 DEFAULT_GENERATION_PARAMS = dict(
@@ -14,7 +15,7 @@ DEFAULT_GENERATION_PARAMS = dict(
 class OpenAIManim(BaseLLM):
     def __init__(
             self, 
-            system_prompt: str = None, 
+            system_prompt: str = DEFAULT_SYSTEM_PROMPT, 
             generation_params: Dict[str, Any] = DEFAULT_GENERATION_PARAMS,
             openai_api_key: str = None,
             model: str = "gpt-3.5-turbo"
@@ -26,11 +27,9 @@ class OpenAIManim(BaseLLM):
         self._model = model
 
     def generate(self, messages: List[Dict[str, str]]) -> str:
-        _messages = messages.insert(0, dict(role="system", content=self.system_prompt))
-
         completion = self._core.chat.completions.create(
             model=self._model,
-            messages=_messages,
+            messages=messages,
             **self.generation_params
         )
 
