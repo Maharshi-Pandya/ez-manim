@@ -8,8 +8,10 @@ from .content import (
     WELCOME_MESSAGE, 
     USER_PROMPT, 
     ASSISTANT_SUCCESS_PROMPT, 
-    ASSISTANT_ERROR_PROMPT 
+    ASSISTANT_ERROR_PROMPT,
+    INVALID_RESPONSE
 )
+from .mwrapper import MWrapper
 
 from ..llm import BaseLLM, OpenAIManim
 
@@ -29,6 +31,11 @@ class Core:
         self.console = console or Console()
         self.llm = llm or OpenAIManim()
         self.quality = quality
+
+        self.mwrapper = MWrapper(
+            code_file_name=self.code_file_name, 
+            quality=self.quality
+        )
 
     def run(self):
         self._show_markdown(WELCOME_MESSAGE, extra_lines=True)
@@ -74,12 +81,29 @@ class Core:
 
                 # TODO: got the user input, now process 
                 if ui:
-                    self.console.print(f"\n{ASSISTANT_SUCCESS_PROMPT}", end="")
-                    self.console.print(ui)
+                    manim_code, ok = self.ask_llm(ui)
+                    if not ok:
+                        self._show_success_error_response(INVALID_RESPONSE, error=True, is_md=True)
+                    else:
+                        # run manim code and save/show
+                        response, err = self.mwrapper.render_from_string(manim_code)
+                        response = ("[bold green]" if not err else "[bold red]") + response
+                        self.console.print(response)
         
         except KeyboardInterrupt:
             self.console.print("\n\nbye bye!\n")
             sys.exit(0)
+
+    def _show_success_error_response(
+            self, content: str, error: bool = False, is_md: bool = False
+        ):
+        assistant_prompt = ASSISTANT_SUCCESS_PROMPT if not error else ASSISTANT_ERROR_PROMPT
+        self.console.print(f"\n{assistant_prompt}", end="")
+
+        if is_md:
+            self._show_markdown(content)
+        else:
+            self.console.print(content)
 
     def ask_llm(self, user_input: str) -> Tuple[str, int]:
         """

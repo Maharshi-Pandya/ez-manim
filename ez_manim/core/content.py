@@ -20,3 +20,5 @@ you can start now, happy animating!
 USER_PROMPT = "[bold yellow]user: "
 ASSISTANT_SUCCESS_PROMPT = "[bold green]assistant: "
 ASSISTANT_ERROR_PROMPT = "[bold red]assistant: "
+
+INVALID_RESPONSE = "_ez-manim is solely for generating manim scenes. Can't help with this request_"

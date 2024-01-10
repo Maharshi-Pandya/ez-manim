@@ -33,5 +33,21 @@ class OpenAIManim(BaseLLM):
             **self.generation_params
         )
 
-        return completion.choices[0].message
+        return self._parse_output(completion.choices[0].message)
     
+    def _parse_output(self, response: str) -> str:
+        """
+        If starts with manim code, then extract code block
+        else it's an invalid request, LLM output will be -1
+        """
+        code_block = ""
+
+        if response == "-1":
+            return "invalid"
+        
+        if response.startswith("Manim code:"):
+            _resp = response.replace("Manim code:", "").strip()
+            _resp = _resp.replace("```python", "").replace("```", "").strip()
+            code_block = _resp
+
+        return code_block
