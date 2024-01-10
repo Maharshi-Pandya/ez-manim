@@ -31,7 +31,7 @@ class MWrapper:
         # scene to render
         scene: str = self.scene_pattern.search(code).group(1)
         
-        response, err = self._render_from_file(self, fpath=fpath, scene_name=scene)
+        response, err = self._render_from_file(fpath=fpath, scene_name=scene)
         return response, err
     
     def _render_from_file(self, fpath="", scene_name="") -> Tuple[str, bool]:
@@ -42,9 +42,9 @@ class MWrapper:
         result = subprocess.run([
             "manim",
             f"-pq{self.quality}",
-            f"--media_dir {self.cwd}",
-            f"--log_dir {self.cwd}"
-            f"{fpath}"
+            # f"--media_dir {self.cwd}",
+            # f"--log_dir {self.cwd}",
+            f"{fpath}",
             f"{scene_name}",
         ], capture_output=True, text=True)
 

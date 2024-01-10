@@ -5,11 +5,14 @@ from .utils.imports import LazyModule
 
 
 _import_structure = {
-    "llm" : {
+    "llm": {
         "base" : ["BaseLLM"],
         "openai": ["OpenAIManim"]
     },
-    "utils" : {
+    "core": {
+        "base": ["Core"],        
+    },
+    "utils": {
         "imports" : ["check_import", "build_all_paths", "build_top_paths", "get_all_attribues"],
     },
 }
@@ -19,8 +22,9 @@ if TYPE_CHECKING:
 
     # Core
     # from .base import Formatter, Core, MetaLLM
-    
-    pass
+
+    from .core import Core
+    from .llm import BaseLLM, OpenAIManim
 
 else:
     

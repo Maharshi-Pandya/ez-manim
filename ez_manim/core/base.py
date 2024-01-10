@@ -16,6 +16,19 @@ from .mwrapper import MWrapper
 from ..llm import BaseLLM, OpenAIManim
 
 
+def run_with_status(console: Console, func: Callable, *args, **kwargs) -> Any:
+    """
+    Runs the function with status
+    """
+    result: Any = None
+
+    with console.status("[bold blue]working on it...") as status:
+        result = func(*args, **kwargs)
+        console.print("[bold blue]done.")
+
+    return result
+
+
 class Core:
     """
     Responsible for executing the manim code from LLM
@@ -81,12 +94,24 @@ class Core:
 
                 # TODO: got the user input, now process 
                 if ui:
-                    manim_code, ok = self.ask_llm(ui)
+                    manim_code, ok = run_with_status(
+                        self.console, 
+                        self.ask_llm, 
+                        ui
+                    )
                     if not ok:
                         self._show_success_error_response(INVALID_RESPONSE, error=True, is_md=True)
                     else:
                         # run manim code and save/show
-                        response, err = self.mwrapper.render_from_string(manim_code)
+                        self._show_success_error_response(manim_code, error=False, is_md=True, end="\n")
+                        sind, eind = manim_code.find("```python"), manim_code.rfind("```")
+                        mcode = manim_code[sind + len("```python"): eind]
+                        
+                        response, err = run_with_status(
+                            self.console, 
+                            self.mwrapper.render_from_string, 
+                            mcode
+                        )
                         response = ("[bold green]" if not err else "[bold red]") + response
                         self.console.print(response)
         
@@ -95,36 +120,42 @@ class Core:
             sys.exit(0)
 
     def _show_success_error_response(
-            self, content: str, error: bool = False, is_md: bool = False
+            self, content: str, error: bool = False, is_md: bool = False, end=""
         ):
         assistant_prompt = ASSISTANT_SUCCESS_PROMPT if not error else ASSISTANT_ERROR_PROMPT
-        self.console.print(f"\n{assistant_prompt}", end="")
+        self.console.print(f"\n{assistant_prompt}", end=end)
 
         if is_md:
             self._show_markdown(content)
         else:
             self.console.print(content)
 
-    def ask_llm(self, user_input: str) -> Tuple[str, int]:
+    def ask_llm(self, user_input: str) -> Tuple[str, bool]:
         """
         Get a response from the llm
         """
 
         response: str = ""
-        # 0: code, 1: invalid
-        ok: int = 0
+        # 0: invalid, 1: code
+        ok: int = False
 
         messages = self.llm.get_windowed_history()
         messages.append({'role': 'user', 'content': user_input})
+
+        # add to history
+        self.llm.add_to_history("user", user_input)
         
         response = self.llm.generate(messages)
 
-        if response == "invalid":
-            ok = 1
+        if response == "-1":
+            ok = False
         elif response.startswith("Manim code:"):
-            ok = 0
+            ok = True
         
-        return (response, ok)
+        self.llm.add_to_history("assistant", response)
+        _response = response.replace("Manim code:", "").strip() if ok else response
+
+        return (_response, ok)
 
 
     def _str2md(self, content: str) -> Markdown:

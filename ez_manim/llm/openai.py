@@ -33,7 +33,7 @@ class OpenAIManim(BaseLLM):
             **self.generation_params
         )
 
-        return self._parse_output(completion.choices[0].message)
+        return completion.choices[0].message.content
     
     def _parse_output(self, response: str) -> str:
         """
@@ -43,11 +43,10 @@ class OpenAIManim(BaseLLM):
         code_block = ""
 
         if response == "-1":
-            return "invalid"
+            return response
         
         if response.startswith("Manim code:"):
             _resp = response.replace("Manim code:", "").strip()
-            _resp = _resp.replace("```python", "").replace("```", "").strip()
             code_block = _resp
 
         return code_block

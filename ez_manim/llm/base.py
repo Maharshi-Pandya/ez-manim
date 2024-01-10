@@ -81,7 +81,9 @@ class BaseLLM(ABC):
 
 
         selected_messages.append({'role': 'system', 'content': self.system_prompt})
-        return reversed(selected_messages)
+        selected_messages.reverse()
+
+        return selected_messages
             
 
     def generate(self, messages: List[Dict[str, str]]) -> Any:
